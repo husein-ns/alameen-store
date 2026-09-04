@@ -986,6 +986,32 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
                       ),
                     ],
                   ),
+                  // لافتة سياسة الدفع عند الاستلام والتوصيل (النقطة الثالثة)
+                  const SizedBox(height: 12),
+                  Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: Colors.amber.shade50,
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: Colors.amber.shade300),
+                    ),
+                    child: Row(
+                      children: const [
+                        Icon(Icons.verified, color: Colors.amber, size: 20),
+                        SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            'الدفع عند الاستلام - توصيل سريع لجميع محافظات العراق 🇮🇶',
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.brown,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                   const Divider(height: 24),
                   if (colors.isNotEmpty) ...[
                     const Text(
@@ -1548,9 +1574,35 @@ class CartScreen extends StatelessWidget {
 
           return Column(
             children: [
+              // لافتة سياسة الدفع عند الاستلام والتوصيل في السلة (النقطة الثالثة)
+              Container(
+                margin: const EdgeInsets.all(12),
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: Colors.green.shade50,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.green.shade200),
+                ),
+                child: Row(
+                  children: const [
+                    Icon(Icons.local_shipping, color: Colors.green, size: 22),
+                    SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'خدمة الدفع عند الاستلام متوفرة لكافة المحافظات 🇮🇶 (أجور التوصيل ثابتة 5,000 د.ع)',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.green.shade900,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
               Expanded(
                 child: ListView.separated(
-                  padding: const EdgeInsets.all(16),
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
                   itemCount: cart.length,
                   separatorBuilder: (_, __) => const Divider(),
                   itemBuilder: (_, i) {
@@ -1747,7 +1799,7 @@ class CartScreen extends StatelessWidget {
       barrierDismissible: false,
       builder: (ctx) => StatefulBuilder(
         builder: (context, setDlgState) => AlertDialog(
-          title: const Text('تأكيد بيانات التوصيل'),
+          title: const Text('تأكيد بيانات التوصيل والدفع عند الاستلام'),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -1918,7 +1970,7 @@ class CartScreen extends StatelessWidget {
 }
 
 // ==========================================
-// 4. الأقسام (تفتح المنتجات الخاصة بالقسم فعلياً)
+// 4. الأقسام
 // ==========================================
 class CategoriesScreen extends StatelessWidget {
   final bool isGuest;
@@ -1978,7 +2030,6 @@ class CategoriesScreen extends StatelessWidget {
 
               return InkWell(
                 onTap: () {
-                  // فتح شاشة المنتجات التابعة للقسم المختار مباشرة
                   Navigator.push(
                     context,
                     MaterialPageRoute(
@@ -2058,7 +2109,6 @@ class CategoryProductsScreen extends StatelessWidget {
             .order('id', ascending: false)
             .then((data) {
               final list = List<Map<String, dynamic>>.from(data);
-              // فلترة المنتجات حسب القسم (أو عرض الكل إذا كان القسم عروض وتخفيضات)
               if (categoryName == 'عروض وتخفيضات') return list;
               return list.where((item) {
                 final String c = (item['category'] ?? '').toString();
@@ -2267,6 +2317,8 @@ class CategoryProductsScreen extends StatelessWidget {
                                           },
                                         ];
                                         ScaffoldMessenger.of(context)
+                                            .hideCurrentSnackBar();
+                                        ScaffoldMessenger.of(context)
                                             .showSnackBar(
                                               SnackBar(
                                                 content: Text(
@@ -2299,7 +2351,7 @@ class CategoryProductsScreen extends StatelessWidget {
 }
 
 // ==========================================
-// 5. لوحة إدارة الطلبات + إحصائيات الدروب شيبينغ للمدير
+// 5. لوحة إدارة الطلبات
 // ==========================================
 class AdminOrdersScreen extends StatefulWidget {
   const AdminOrdersScreen({super.key});
@@ -2354,13 +2406,10 @@ class _AdminOrdersScreenState extends State<AdminOrdersScreen> {
           .update({'status': newStatus})
           .eq('id', orderId);
       if (mounted) {
-        ScaffoldMessenger.of(context).hideCurrentSnackBar();
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('✅ تم تغيير حالة الطلب إلى ($newStatus)'),
-            duration: const Duration(seconds: 2),
             backgroundColor: Colors.green,
-            behavior: SnackBarBehavior.floating,
           ),
         );
       }
@@ -2398,13 +2447,6 @@ class _AdminOrdersScreenState extends State<AdminOrdersScreen> {
         color: Colors.white,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: color.withAlpha(50)),
-        boxShadow: [
-          BoxShadow(
-            color: color.withAlpha(15),
-            blurRadius: 6,
-            offset: const Offset(0, 2),
-          ),
-        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -2459,7 +2501,6 @@ class _AdminOrdersScreenState extends State<AdminOrdersScreen> {
           }
 
           final orders = snapshot.data ?? [];
-
           int totalOrders = orders.length;
           int pendingCount = orders
               .where((o) => (o['status'] ?? '') == 'قيد التجهيز')
@@ -2494,23 +2535,16 @@ class _AdminOrdersScreenState extends State<AdminOrdersScreen> {
                     decoration: BoxDecoration(
                       color: const Color(0xFFF1F5F9),
                       borderRadius: BorderRadius.circular(14),
-                      border: Border.all(color: Colors.blue.shade100),
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Row(
-                          children: [
-                            Icon(Icons.analytics, color: Colors.blue, size: 20),
-                            SizedBox(width: 8),
-                            Text(
-                              'لوحة المؤشرات وأداء المبيعات',
-                              style: TextStyle(
-                                fontWeight: FontWeight.bold,
-                                fontSize: 15,
-                              ),
-                            ),
-                          ],
+                        const Text(
+                          'لوحة المؤشرات وأداء المبيعات',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 15,
+                          ),
                         ),
                         const SizedBox(height: 12),
                         GridView.count(
@@ -2551,24 +2585,9 @@ class _AdminOrdersScreenState extends State<AdminOrdersScreen> {
                     ),
                   ),
                   const SizedBox(height: 16),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      const Text(
-                        'قائمة الطلبات الواردة:',
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 16,
-                        ),
-                      ),
-                      Text(
-                        'المكتمل: $deliveredCount',
-                        style: const TextStyle(
-                          color: Colors.green,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ],
+                  const Text(
+                    'قائمة الطلبات الواردة:',
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                   ),
                   const SizedBox(height: 10),
                   if (orders.isEmpty)
@@ -2592,7 +2611,6 @@ class _AdminOrdersScreenState extends State<AdminOrdersScreen> {
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
                         ),
-                        elevation: 2,
                         child: Padding(
                           padding: const EdgeInsets.all(14),
                           child: Column(
@@ -2622,53 +2640,17 @@ class _AdminOrdersScreenState extends State<AdminOrdersScreen> {
                                 ],
                               ),
                               const SizedBox(height: 6),
-                              Text(
-                                'الزبون: $name',
-                                style: const TextStyle(
-                                  fontSize: 14,
-                                  color: Colors.black87,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                              Text(
-                                'الهاتف: $phone',
-                                style: const TextStyle(
-                                  fontSize: 13,
-                                  color: Colors.blue,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                              Text(
-                                'المحافظة: ${o['province'] ?? ""}',
-                                style: const TextStyle(
-                                  fontSize: 12,
-                                  color: Colors.black87,
-                                ),
-                              ),
-                              Text(
-                                'العنوان التفصيلي: ${o['address'] ?? ""}',
-                                style: const TextStyle(
-                                  fontSize: 12,
-                                  color: Colors.blueGrey,
-                                ),
-                              ),
-                              Text(
-                                'اللون المختار: ${o['selected_color']}',
-                                style: const TextStyle(
-                                  fontSize: 12,
-                                  color: Colors.grey,
-                                ),
-                              ),
+                              Text('الزبون: $name'),
+                              Text('الهاتف: $phone'),
+                              Text('المحافظة: ${o['province'] ?? ""}'),
+                              Text('العنوان التفصيلي: ${o['address'] ?? ""}'),
+                              Text('اللون المختار: ${o['selected_color']}'),
                               const Divider(height: 18),
                               Row(
                                 children: [
                                   ElevatedButton.icon(
                                     style: ElevatedButton.styleFrom(
                                       backgroundColor: Colors.blue,
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 12,
-                                        vertical: 6,
-                                      ),
                                     ),
                                     icon: const Icon(
                                       Icons.call,
@@ -2676,11 +2658,8 @@ class _AdminOrdersScreenState extends State<AdminOrdersScreen> {
                                       color: Colors.white,
                                     ),
                                     label: const Text(
-                                      'اتصال هاتف',
-                                      style: TextStyle(
-                                        fontSize: 12,
-                                        color: Colors.white,
-                                      ),
+                                      'اتصال',
+                                      style: TextStyle(color: Colors.white),
                                     ),
                                     onPressed: () => _callCustomer(phone),
                                   ),
@@ -2688,10 +2667,6 @@ class _AdminOrdersScreenState extends State<AdminOrdersScreen> {
                                   ElevatedButton.icon(
                                     style: ElevatedButton.styleFrom(
                                       backgroundColor: const Color(0xFF25D366),
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 12,
-                                        vertical: 6,
-                                      ),
                                     ),
                                     icon: const Icon(
                                       Icons.chat,
@@ -2699,11 +2674,8 @@ class _AdminOrdersScreenState extends State<AdminOrdersScreen> {
                                       color: Colors.white,
                                     ),
                                     label: const Text(
-                                      'مراسلة واتساب',
-                                      style: TextStyle(
-                                        fontSize: 12,
-                                        color: Colors.white,
-                                      ),
+                                      'واتساب',
+                                      style: TextStyle(color: Colors.white),
                                     ),
                                     onPressed: () =>
                                         _whatsAppCustomer(phone, name, product),
@@ -2711,60 +2683,25 @@ class _AdminOrdersScreenState extends State<AdminOrdersScreen> {
                                 ],
                               ),
                               const SizedBox(height: 12),
-                              const Text(
-                                'تحديث مسار الطلب:',
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.grey,
-                                ),
-                              ),
-                              const SizedBox(height: 8),
                               Wrap(
                                 spacing: 8,
-                                runSpacing: 8,
                                 children: statuses.map((st) {
                                   final bool isSelected = currentStatus == st;
                                   final Color color = _getStatusColor(st);
-
-                                  return InkWell(
-                                    onTap: () {
-                                      if (!isSelected) {
+                                  return ChoiceChip(
+                                    label: Text(st),
+                                    selected: isSelected,
+                                    selectedColor: color,
+                                    labelStyle: TextStyle(
+                                      color: isSelected
+                                          ? Colors.white
+                                          : Colors.black,
+                                    ),
+                                    onSelected: (selected) {
+                                      if (selected && !isSelected) {
                                         _updateOrderStatus(o['id'], st, o);
                                       }
                                     },
-                                    borderRadius: BorderRadius.circular(20),
-                                    child: AnimatedContainer(
-                                      duration: const Duration(
-                                        milliseconds: 200,
-                                      ),
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 14,
-                                        vertical: 8,
-                                      ),
-                                      decoration: BoxDecoration(
-                                        color: isSelected
-                                            ? color
-                                            : color.withAlpha(25),
-                                        borderRadius: BorderRadius.circular(20),
-                                        border: Border.all(
-                                          color: color,
-                                          width: isSelected ? 2 : 1,
-                                        ),
-                                      ),
-                                      child: Text(
-                                        st,
-                                        style: TextStyle(
-                                          color: isSelected
-                                              ? Colors.white
-                                              : color,
-                                          fontWeight: isSelected
-                                              ? FontWeight.bold
-                                              : FontWeight.normal,
-                                          fontSize: 13,
-                                        ),
-                                      ),
-                                    ),
                                   );
                                 }).toList(),
                               ),
@@ -2801,22 +2738,9 @@ class OrdersHistoryScreen extends StatelessWidget {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(Icons.lock_outline, size: 70, color: Colors.grey.shade400),
-                const SizedBox(height: 14),
-                const Text(
-                  'أنت تتصفح كضيف حالياً',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                ),
-                const SizedBox(height: 8),
-                const Text(
-                  'يرجى تسجيل الدخول أو إنشاء حساب لحفظ طلباتك ومتابعتها مباشرة',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(color: Colors.grey, fontSize: 14),
-                ),
-                const SizedBox(height: 20),
-                ElevatedButton.icon(
-                  icon: const Icon(Icons.login),
-                  label: const Text('تسجيل الدخول / إنشاء حساب'),
+                const Text('أنت تتصفح كضيف حالياً'),
+                const SizedBox(height: 16),
+                ElevatedButton(
                   onPressed: () {
                     Navigator.pushReplacement(
                       context,
@@ -2825,6 +2749,7 @@ class OrdersHistoryScreen extends StatelessWidget {
                       ),
                     );
                   },
+                  child: const Text('تسجيل الدخول / إنشاء حساب'),
                 ),
               ],
             ),
@@ -2847,41 +2772,19 @@ class OrdersHistoryScreen extends StatelessWidget {
           final orders = snapshot.data ?? [];
           if (orders.isEmpty)
             return const Center(child: Text('لا توجد طلبات مسجلة بحسابك'));
-          return Center(
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 900),
-              child: ListView.builder(
-                padding: const EdgeInsets.all(14),
-                itemCount: orders.length,
-                itemBuilder: (_, i) {
-                  final o = orders[i];
-                  final dynamic orderPrice =
-                      o['total_amount'] ?? o['price'] ?? 0;
-                  return Card(
-                    child: ListTile(
-                      leading: const Icon(
-                        Icons.shopping_bag,
-                        color: Colors.blue,
-                      ),
-                      title: Text(
-                        o['product_name'] ?? 'طلب',
-                        style: const TextStyle(fontWeight: FontWeight.bold),
-                      ),
-                      subtitle: Text(
-                        'الحالة: ${o['status'] ?? "قيد التجهيز"}\n(اللون: ${o['selected_color']})',
-                      ),
-                      trailing: Text(
-                        '$orderPrice د.ع',
-                        style: const TextStyle(
-                          color: Colors.green,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                  );
-                },
-              ),
-            ),
+          return ListView.builder(
+            padding: const EdgeInsets.all(14),
+            itemCount: orders.length,
+            itemBuilder: (_, i) {
+              final o = orders[i];
+              return Card(
+                child: ListTile(
+                  title: Text(o['product_name'] ?? 'طلب'),
+                  subtitle: Text('الحالة: ${o['status'] ?? "قيد التجهيز"}'),
+                  trailing: Text('${o['total_amount'] ?? o['price']} د.ع'),
+                ),
+              );
+            },
           );
         },
       ),
@@ -2925,7 +2828,7 @@ class _WebVideoPlayerState extends State<WebVideoPlayer> {
 }
 
 // ==========================================
-// 6. شاشة إضافة منتج جديد (مع اختيار القسم)
+// 6. شاشة إضافة منتج جديد
 // ==========================================
 class AddProductScreen extends StatefulWidget {
   const AddProductScreen({super.key});
@@ -2961,20 +2864,15 @@ class _AddProductScreenState extends State<AddProductScreen> {
     text: 'https://idaxgihzqbgzvellxlxn.supabase.co/storage/v1/object/public/products/photo_1_2026-09-01_18-18-02.jpg',
   );
   final _albumImgs = TextEditingController(
-    text: 'https://idaxgihzqbgzvellxlxn.supabase.co/storage/v1/object/public/products/photo_2_2026-09-01_18-18-02.jpg, https://idaxgihzqbgzvellxlxn.supabase.co/storage/v1/object/public/products/photo_3_2026-09-01_18-18-02.jpg, https://idaxgihzqbgzvellxlxn.supabase.co/storage/v1/object/public/products/photo_4_2026-09-01_18-18-02.jpg, https://idaxgihzqbgzvellxlxn.supabase.co/storage/v1/object/public/products/photo_6_2026-09-01_18-18-02.jpg',
+    text: 'https://idaxgihzqbgzvellxlxn.supabase.co/storage/v1/object/public/products/photo_2_2026-09-01_18-18-02.jpg',
   );
   final _video = TextEditingController(
     text: 'https://youtube.com/shorts/7cc55D-WSM0?feature=share',
   );
   final _desc = TextEditingController(
-    text: '✨ ودّع الخدوش المزعجة بسيارتك في ثواني! قلم تصليح الخدوش الحل الأسرع لإرجاع لمعة السيارة الأصلية.',
+    text: '✨ ودّع الخدوش المزعجة بسيارتك في ثواني! حل سريع وفعال.',
   );
-  final Map<String, bool> _cols = {
-    'أسود': true,
-    'فضي': true,
-    'أحمر': true,
-    'أصفر': true,
-  };
+  final Map<String, bool> _cols = {'أسود': true, 'فضي': true, 'أحمر': true};
 
   @override
   Widget build(BuildContext context) {
@@ -2986,20 +2884,14 @@ class _AddProductScreenState extends State<AddProductScreen> {
           child: SingleChildScrollView(
             padding: const EdgeInsets.all(24),
             child: Card(
-              elevation: 2,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
               child: Padding(
                 padding: const EdgeInsets.all(20),
                 child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     TextField(
                       controller: _name,
                       decoration: const InputDecoration(
                         labelText: 'اسم المنتج',
-                        border: OutlineInputBorder(),
                       ),
                     ),
                     const SizedBox(height: 14),
@@ -3011,131 +2903,50 @@ class _AddProductScreenState extends State<AddProductScreen> {
                           )
                           .toList(),
                       onChanged: (v) => setState(() => _selectedCategory = v!),
-                      decoration: const InputDecoration(
-                        labelText: 'القسم التابع له المنتج',
-                        border: OutlineInputBorder(),
-                      ),
+                      decoration: const InputDecoration(labelText: 'القسم'),
                     ),
                     const SizedBox(height: 14),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: TextField(
-                            controller: _price,
-                            decoration: const InputDecoration(
-                              labelText: 'السعر (د.ع)',
-                              border: OutlineInputBorder(),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: TextField(
-                            controller: _stock,
-                            decoration: const InputDecoration(
-                              labelText: 'الكمية بالمخزن',
-                              border: OutlineInputBorder(),
-                            ),
-                          ),
-                        ),
-                      ],
+                    TextField(
+                      controller: _price,
+                      decoration: const InputDecoration(
+                        labelText: 'السعر (د.ع)',
+                      ),
                     ),
                     const SizedBox(height: 14),
                     TextField(
                       controller: _mainImg,
                       decoration: const InputDecoration(
-                        labelText: 'رابط الصورة الرئيسية للمنتج',
-                        border: OutlineInputBorder(),
+                        labelText: 'رابط الصورة',
                       ),
-                    ),
-                    const SizedBox(height: 14),
-                    TextField(
-                      controller: _albumImgs,
-                      maxLines: 2,
-                      decoration: const InputDecoration(
-                        labelText: 'بقية صور الألبوم (مفصولة بفاصلة ,)',
-                        border: OutlineInputBorder(),
-                      ),
-                    ),
-                    const SizedBox(height: 14),
-                    TextField(
-                      controller: _video,
-                      decoration: const InputDecoration(
-                        labelText: 'رابط فيديو يوتيوب أو Shorts',
-                        border: OutlineInputBorder(),
-                      ),
-                    ),
-                    const SizedBox(height: 14),
-                    const Text(
-                      'الألوان المتوفرة:',
-                      style: TextStyle(fontWeight: FontWeight.bold),
-                    ),
-                    const SizedBox(height: 6),
-                    Wrap(
-                      spacing: 8,
-                      children: _cols.keys.map((k) {
-                        return FilterChip(
-                          label: Text(k),
-                          selected: _cols[k]!,
-                          onSelected: (v) => setState(() => _cols[k] = v),
-                        );
-                      }).toList(),
                     ),
                     const SizedBox(height: 14),
                     TextField(
                       controller: _desc,
                       maxLines: 3,
-                      decoration: const InputDecoration(
-                        labelText: 'الوصف والمواصفات',
-                        border: OutlineInputBorder(),
-                      ),
+                      decoration: const InputDecoration(labelText: 'الوصف'),
                     ),
                     const SizedBox(height: 20),
-                    SizedBox(
-                      width: double.infinity,
-                      height: 48,
-                      child: ElevatedButton(
-                        onPressed: () async {
-                          String mainUrl = _mainImg.text.trim();
-                          List<String> list = [];
-                          if (mainUrl.isNotEmpty) list.add(mainUrl);
-                          List<String> extraList = _albumImgs.text
-                              .split(',')
-                              .map((e) => e.trim())
-                              .where((e) => e.isNotEmpty)
-                              .toList();
-                          for (var e in extraList) {
-                            if (!list.contains(e)) list.add(e);
-                          }
-                          List<String> selectedCols = _cols.entries
+                    ElevatedButton(
+                      onPressed: () async {
+                        String mainUrl = _mainImg.text.trim();
+                        await supabase.from('products').insert({
+                          'name': _name.text,
+                          'title': _name.text,
+                          'category': _selectedCategory,
+                          'price': double.tryParse(_price.text) ?? 0,
+                          'stock': 100,
+                          'image_url': mainUrl,
+                          'images': [mainUrl],
+                          'video_url': _video.text.trim(),
+                          'colors': _cols.entries
                               .where((e) => e.value)
                               .map((e) => e.key)
-                              .toList();
-
-                          await supabase.from('products').insert({
-                            'name': _name.text,
-                            'title': _name.text,
-                            'category': _selectedCategory,
-                            'price': double.tryParse(_price.text) ?? 0,
-                            'stock': int.tryParse(_stock.text) ?? 0,
-                            'image_url': mainUrl.isNotEmpty
-                                ? mainUrl
-                                : (list.isNotEmpty ? list.first : ''),
-                            'images': list,
-                            'video_url': _video.text.trim(),
-                            'colors': selectedCols,
-                            'description': _desc.text,
-                          });
-                          if (context.mounted) Navigator.pop(context, true);
-                        },
-                        child: const Text(
-                          'حفظ ونشر المنتج',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
+                              .toList(),
+                          'description': _desc.text,
+                        });
+                        if (context.mounted) Navigator.pop(context, true);
+                      },
+                      child: const Text('حفظ ونشر المنتج'),
                     ),
                   ],
                 ),
@@ -3174,159 +2985,12 @@ class AccountTabScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final user = supabase.auth.currentUser;
-
-    if (isAdmin) {
-      return Scaffold(
-        appBar: AppBar(
-          title: const Text('لوحة الإدارة'),
-          actions: [
-            IconButton(
-              icon: const Icon(Icons.logout),
-              tooltip: 'تسجيل الخروج',
-              onPressed: () => _goToAuthLanding(context),
-            ),
-          ],
-        ),
-        body: Center(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 600),
-            child: ListView(
-              padding: const EdgeInsets.all(20),
-              children: [
-                Center(
-                  child: Column(
-                    children: [
-                      const CircleAvatar(
-                        radius: 40,
-                        child: Icon(Icons.person, size: 45),
-                      ),
-                      const SizedBox(height: 10),
-                      Text(
-                        user?.email ?? '',
-                        style: const TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 16,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      const Chip(
-                        label: Text(
-                          'مدير المتجر',
-                          style: TextStyle(color: Colors.white),
-                        ),
-                        backgroundColor: Colors.blue,
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 24),
-                Card(
-                  child: ListTile(
-                    leading: const Icon(Icons.add_box, color: Colors.blue),
-                    title: const Text(
-                      'إضافة منتج جديد للمتجر',
-                      style: TextStyle(fontWeight: FontWeight.bold),
-                    ),
-                    trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => const AddProductScreen(),
-                        ),
-                      );
-                    },
-                  ),
-                ),
-                const SizedBox(height: 10),
-                Card(
-                  child: ListTile(
-                    leading: const Icon(Icons.analytics, color: Colors.green),
-                    title: const Text(
-                      'إدارة الطلبات ولوحة الإحصائيات',
-                      style: TextStyle(fontWeight: FontWeight.bold),
-                    ),
-                    subtitle: const Text('متابعة الأرباح وطلبات الدروب شيبينغ'),
-                    trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-                    onTap: () {
-                      navKey.currentState?.switchTab(3);
-                    },
-                  ),
-                ),
-                const SizedBox(height: 10),
-                Card(
-                  child: ListTile(
-                    leading: const Icon(Icons.logout, color: Colors.red),
-                    title: const Text(
-                      'تسجيل الخروج',
-                      style: TextStyle(
-                        color: Colors.red,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    onTap: () => _goToAuthLanding(context),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      );
-    }
-
     return Scaffold(
       appBar: AppBar(title: const Text('حسابي')),
       body: Center(
-        child: Padding(
-          padding: const EdgeInsets.all(24.0),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(
-                isGuest ? Icons.person_outline : Icons.account_circle,
-                size: 70,
-                color: Colors.blue.shade300,
-              ),
-              const SizedBox(height: 14),
-              Text(
-                isGuest
-                    ? 'أهلاً بك في متجر الأمين'
-                    : (user?.email ?? 'مرحباً بك'),
-                style: const TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                isGuest
-                    ? 'سجل دخولك لتتمكن من حفظ طلباتك ومتابعتها بسهولة'
-                    : 'حسابك مسجل وجاهز للتسوق',
-                textAlign: TextAlign.center,
-                style: const TextStyle(color: Colors.grey, fontSize: 14),
-              ),
-              const SizedBox(height: 24),
-              SizedBox(
-                width: 240,
-                height: 46,
-                child: ElevatedButton.icon(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: isGuest ? Colors.blue : Colors.red,
-                  ),
-                  icon: Icon(isGuest ? Icons.login : Icons.logout),
-                  label: Text(
-                    isGuest ? 'تسجيل الدخول / إنشاء حساب' : 'تسجيل الخروج',
-                    style: const TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 15,
-                    ),
-                  ),
-                  onPressed: () => _goToAuthLanding(context),
-                ),
-              ),
-            ],
-          ),
+        child: ElevatedButton(
+          onPressed: () => _goToAuthLanding(context),
+          child: const Text('تسجيل الخروج'),
         ),
       ),
     );
