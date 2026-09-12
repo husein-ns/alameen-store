@@ -38,6 +38,18 @@ alter table public.orders enable row level security;
 alter table public.product_reviews enable row level security;
 alter table public.store_messages enable row level security;
 
+do $$
+begin
+	begin
+		alter publication supabase_realtime add table public.products;
+	exception when duplicate_object then null;
+	end;
+	begin
+		alter publication supabase_realtime add table public.store_messages;
+	exception when duplicate_object then null;
+	end;
+end $$;
+
 drop policy if exists "Anyone can read store messages" on public.store_messages;
 create policy "Anyone can read store messages"
 on public.store_messages for select to anon, authenticated using (true);
