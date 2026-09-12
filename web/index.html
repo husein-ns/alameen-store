@@ -28,11 +28,41 @@
 
   <!-- Favicon -->
   <link rel="icon" type="image/png" href="favicon.png"/>
+  <link rel="preload" href="assets/fonts/MaterialIcons-Regular.otf" as="font" type="font/otf" crossorigin>
+
+  <style>
+    @font-face {
+      font-family: 'MaterialIcons';
+      src: url('assets/fonts/MaterialIcons-Regular.otf') format('opentype');
+      font-display: block;
+    }
+    @font-face {
+      font-family: 'Material Icons';
+      src: url('assets/fonts/MaterialIcons-Regular.otf') format('opentype');
+      font-display: block;
+    }
+  </style>
 
   <title>matjari</title>
   <link rel="manifest" href="manifest.json">
 </head>
 <body>
+  <script>
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.getRegistrations().then(function (registrations) {
+        registrations.forEach(function (registration) {
+          registration.unregister();
+        });
+      });
+      if ('caches' in window) {
+        caches.keys().then(function (keys) {
+          keys.forEach(function (key) {
+            caches.delete(key);
+          });
+        });
+      }
+    }
+  </script>
   <!--
     You can customize the "flutter_bootstrap.js" script.
     This is useful to provide a custom configuration to the Flutter loader
