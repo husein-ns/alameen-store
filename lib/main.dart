@@ -28,6 +28,15 @@ const String kAdminEmail = 'gametrailerengilish@gmail.com';
 const String kWhatsAppNumber = '9647700000000';
 const double kDeliveryFee = 5000.0;
 
+void _openCustomerWhatsApp(String phone, String message) {
+  final cleanPhone = phone.replaceAll(RegExp(r'[^0-9]'), '');
+  if (cleanPhone.isEmpty) return;
+  html.window.open(
+    'https://wa.me/$cleanPhone?text=${Uri.encodeComponent(message)}',
+    '_blank',
+  );
+}
+
 final ValueNotifier<List<Map<String, dynamic>>> cartNotifier = ValueNotifier(
   [],
 );
@@ -463,6 +472,9 @@ class _EditProductScreenState extends State<EditProductScreen> {
   late final TextEditingController _descCtrl;
   late final TextEditingController _imageCtrl;
   late final TextEditingController _videoCtrl;
+  late final TextEditingController _supplierCtrl;
+  late final TextEditingController _stockCtrl;
+  late final TextEditingController _colorsCtrl;
   late String _selectedCategory;
   late bool _isOutOfStock;
   bool _isLoading = false;
@@ -507,10 +519,35 @@ class _EditProductScreenState extends State<EditProductScreen> {
       }
     }
     _videoCtrl = TextEditingController(text: widget.product['video_url'] ?? '');
+    _supplierCtrl = TextEditingController(
+      text: widget.product['supplier']?.toString() ?? '',
+    );
+    _stockCtrl = TextEditingController(
+      text: widget.product['stock']?.toString() ?? '0',
+    );
+    final productColors = widget.product['colors'];
+    _colorsCtrl = TextEditingController(
+      text: productColors is List && productColors.isNotEmpty
+          ? productColors.join(', ')
+          : 'قياسي',
+    );
     _selectedCategory = widget.product['category'] ?? 'إلكترونيات';
     _isOutOfStock =
         widget.product['out_of_stock'] == true ||
         widget.product['is_out_of_stock'] == true;
+  }
+
+  @override
+  void dispose() {
+    _nameCtrl.dispose();
+    _priceCtrl.dispose();
+    _descCtrl.dispose();
+    _imageCtrl.dispose();
+    _videoCtrl.dispose();
+    _supplierCtrl.dispose();
+    _stockCtrl.dispose();
+    _colorsCtrl.dispose();
+    super.dispose();
   }
 
   Future<void> _updateProduct() async {
@@ -519,6 +556,13 @@ class _EditProductScreenState extends State<EditProductScreen> {
     final desc = _descCtrl.text.trim();
     final imgUrl = _imageCtrl.text.trim();
     final videoUrl = _videoCtrl.text.trim();
+    final supplier = _supplierCtrl.text.trim();
+    final stock = int.tryParse(_stockCtrl.text.trim()) ?? 0;
+    final colors = _colorsCtrl.text
+      .split(',')
+      .map((color) => color.trim())
+      .where((color) => color.isNotEmpty)
+      .toList();
 
     if (name.isEmpty || priceStr.isEmpty) return;
     final double? price = double.tryParse(priceStr);
@@ -540,6 +584,10 @@ class _EditProductScreenState extends State<EditProductScreen> {
             'images': images,
             'video_url': videoUrl,
             'category': _selectedCategory,
+            'supplier': supplier,
+            'stock': stock,
+            'colors': colors.isEmpty ? ['قياسي'] : colors,
+            'out_of_stock': _isOutOfStock || stock <= 0,
           })
           .eq('id', widget.product['id']);
 
@@ -603,6 +651,32 @@ class _EditProductScreenState extends State<EditProductScreen> {
                 onChanged: (v) => setState(() => _selectedCategory = v!),
                 decoration: const InputDecoration(
                   labelText: 'القسم *',
+                  border: OutlineInputBorder(),
+                ),
+              ),
+              const SizedBox(height: 14),
+              TextField(
+                controller: _supplierCtrl,
+                decoration: const InputDecoration(
+                  labelText: 'المورد (للمدير فقط)',
+                  border: OutlineInputBorder(),
+                ),
+              ),
+              const SizedBox(height: 14),
+              TextField(
+                controller: _stockCtrl,
+                keyboardType: TextInputType.number,
+                decoration: const InputDecoration(
+                  labelText: 'عدد القطع المتوفرة (للمدير فقط)',
+                  border: OutlineInputBorder(),
+                ),
+              ),
+              const SizedBox(height: 14),
+              TextField(
+                controller: _colorsCtrl,
+                decoration: const InputDecoration(
+                  labelText: 'الألوان للزبون (افصل بينها بفاصلة)',
+                  hintText: 'قياسي أو أسود، أبيض، أحمر',
                   border: OutlineInputBorder(),
                 ),
               ),
@@ -733,10 +807,26 @@ class _AddProductScreenState extends State<AddProductScreen> {
   final _descCtrl = TextEditingController();
   final _imageCtrl = TextEditingController();
   final _videoCtrl = TextEditingController();
+  final _supplierCtrl = TextEditingController();
+  final _stockCtrl = TextEditingController(text: '0');
+  final _colorsCtrl = TextEditingController(text: 'قياسي');
   String _selectedCategory = 'إلكترونيات';
   bool _isOutOfStock = false;
   bool _isLoading = false;
   final List<String> _images = [];
+
+  @override
+  void dispose() {
+    _nameCtrl.dispose();
+    _priceCtrl.dispose();
+    _descCtrl.dispose();
+    _imageCtrl.dispose();
+    _videoCtrl.dispose();
+    _supplierCtrl.dispose();
+    _stockCtrl.dispose();
+    _colorsCtrl.dispose();
+    super.dispose();
+  }
 
   final List<String> _categories = [
     'عروض وتخفيضات',
@@ -759,6 +849,13 @@ class _AddProductScreenState extends State<AddProductScreen> {
     final desc = _descCtrl.text.trim();
     final imgUrl = _imageCtrl.text.trim();
     final videoUrl = _videoCtrl.text.trim();
+    final supplier = _supplierCtrl.text.trim();
+    final stock = int.tryParse(_stockCtrl.text.trim()) ?? 0;
+    final colors = _colorsCtrl.text
+      .split(',')
+      .map((color) => color.trim())
+      .where((color) => color.isNotEmpty)
+      .toList();
 
     if (name.isEmpty || priceStr.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -784,7 +881,10 @@ class _AddProductScreenState extends State<AddProductScreen> {
         'images': images,
         'video_url': videoUrl,
         'category': _selectedCategory,
-        'colors': ['أسود', 'فضي', 'أبيض'],
+        'supplier': supplier,
+        'stock': stock,
+        'colors': colors.isEmpty ? ['قياسي'] : colors,
+        'out_of_stock': _isOutOfStock || stock <= 0,
       });
 
       if (mounted) {
@@ -845,6 +945,32 @@ class _AddProductScreenState extends State<AddProductScreen> {
                 onChanged: (v) => setState(() => _selectedCategory = v!),
                 decoration: const InputDecoration(
                   labelText: 'القسم *',
+                  border: OutlineInputBorder(),
+                ),
+              ),
+              const SizedBox(height: 14),
+              TextField(
+                controller: _supplierCtrl,
+                decoration: const InputDecoration(
+                  labelText: 'المورد (للمدير فقط)',
+                  border: OutlineInputBorder(),
+                ),
+              ),
+              const SizedBox(height: 14),
+              TextField(
+                controller: _stockCtrl,
+                keyboardType: TextInputType.number,
+                decoration: const InputDecoration(
+                  labelText: 'عدد القطع المتوفرة (للمدير فقط)',
+                  border: OutlineInputBorder(),
+                ),
+              ),
+              const SizedBox(height: 14),
+              TextField(
+                controller: _colorsCtrl,
+                decoration: const InputDecoration(
+                  labelText: 'الألوان للزبون (افصل بينها بفاصلة)',
+                  hintText: 'قياسي أو أسود، أبيض، أحمر',
                   border: OutlineInputBorder(),
                 ),
               ),
@@ -1961,6 +2087,157 @@ class WishlistScreen extends StatelessWidget {
   }
 }
 
+class StoreChatScreen extends StatefulWidget {
+  final String customerContact;
+  final String customerName;
+  final bool isAdmin;
+
+  const StoreChatScreen({
+    super.key,
+    required this.customerContact,
+    required this.customerName,
+    required this.isAdmin,
+  });
+
+  @override
+  State<StoreChatScreen> createState() => _StoreChatScreenState();
+}
+
+class _StoreChatScreenState extends State<StoreChatScreen> {
+  final _messageCtrl = TextEditingController();
+  late Future<List<Map<String, dynamic>>> _messagesFuture;
+  RealtimeChannel? _messagesChannel;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadMessages();
+    _messagesChannel = supabase
+      .channel('store-messages-${widget.customerContact}')
+        .onPostgresChanges(
+          event: PostgresChangeEvent.insert,
+          schema: 'public',
+          table: 'store_messages',
+          filter: PostgresChangeFilter(
+            type: PostgresChangeFilterType.eq,
+            column: 'customer_contact',
+            value: widget.customerContact,
+          ),
+          callback: (_) {
+            if (mounted) setState(_loadMessages);
+          },
+        )
+        .subscribe();
+  }
+
+  void _loadMessages() {
+    _messagesFuture = supabase
+        .from('store_messages')
+        .select()
+        .eq('customer_contact', widget.customerContact)
+        .order('id');
+  }
+
+  Future<void> _sendMessage() async {
+    final text = _messageCtrl.text.trim();
+    if (text.isEmpty) return;
+    await supabase.from('store_messages').insert({
+      'customer_phone': widget.customerContact,
+      'customer_contact': widget.customerContact,
+      'sender_role': widget.isAdmin ? 'admin' : 'customer',
+      'sender_name': widget.isAdmin
+          ? 'إدارة متجر الأمين'
+          : widget.customerName,
+      'message': text,
+    });
+    _messageCtrl.clear();
+    if (mounted) setState(_loadMessages);
+  }
+
+  @override
+  void dispose() {
+    _messagesChannel?.unsubscribe();
+    _messageCtrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: Text('محادثة ${widget.customerName}')),
+      body: Column(
+        children: [
+          Expanded(
+            child: FutureBuilder<List<Map<String, dynamic>>>(
+              future: _messagesFuture,
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+                final messages = snapshot.data ?? [];
+                if (messages.isEmpty) {
+                  return const Center(child: Text('لا توجد رسائل بعد'));
+                }
+                return ListView.builder(
+                  padding: const EdgeInsets.all(12),
+                  itemCount: messages.length,
+                  itemBuilder: (_, index) {
+                    final message = messages[index];
+                    final mine =
+                        message['sender_role']?.toString() ==
+                        (widget.isAdmin ? 'admin' : 'customer');
+                    return Align(
+                      alignment: mine
+                          ? Alignment.centerRight
+                          : Alignment.centerLeft,
+                      child: Container(
+                        margin: const EdgeInsets.only(bottom: 8),
+                        padding: const EdgeInsets.all(12),
+                        constraints: const BoxConstraints(maxWidth: 320),
+                        decoration: BoxDecoration(
+                          color: mine
+                              ? const Color(0xFFDCF8C6)
+                              : Colors.grey.shade200,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Text(message['message']?.toString() ?? ''),
+                      ),
+                    );
+                  },
+                );
+              },
+            ),
+          ),
+          SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.all(10),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: TextField(
+                      controller: _messageCtrl,
+                      minLines: 1,
+                      maxLines: 3,
+                      decoration: const InputDecoration(
+                        hintText: 'اكتب رسالتك...',
+                        border: OutlineInputBorder(),
+                      ),
+                    ),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.send, color: Color(0xFF1E3A8A)),
+                    onPressed: _sendMessage,
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class AccountTabScreen extends StatelessWidget {
   final bool isGuest;
   final bool isAdmin;
@@ -1988,7 +2265,9 @@ class AccountTabScreen extends StatelessWidget {
 
   void _showAppSupportDialog(BuildContext context) {
     final nameCtrl = TextEditingController();
-    final phoneCtrl = TextEditingController();
+    final phoneCtrl = TextEditingController(
+      text: supabase.auth.currentUser?.email ?? '',
+    );
     final msgCtrl = TextEditingController();
     bool isSending = false;
 
@@ -2023,9 +2302,9 @@ class AccountTabScreen extends StatelessWidget {
                 const SizedBox(height: 10),
                 TextField(
                   controller: phoneCtrl,
-                  keyboardType: TextInputType.text,
+                  keyboardType: TextInputType.emailAddress,
                   decoration: const InputDecoration(
-                    labelText: 'رقم الهاتف *',
+                    labelText: 'الإيميل أو رقم الهاتف *',
                     border: OutlineInputBorder(),
                   ),
                 ),
@@ -2075,6 +2354,16 @@ class AccountTabScreen extends StatelessWidget {
 
                         if (context.mounted) {
                           Navigator.pop(ctx);
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => StoreChatScreen(
+                                customerContact: p,
+                                customerName: n,
+                                isAdmin: false,
+                              ),
+                            ),
+                          );
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(
                               content: Text(
@@ -2760,12 +3049,37 @@ class _HomeScreenState extends State<HomeScreen> {
   late Future<List<Map<String, dynamic>>> _productsFuture;
   final TextEditingController _searchCtrl = TextEditingController();
   String _searchQuery = '';
+  RealtimeChannel? _productsChannel;
 
   @override
   void initState() {
     super.initState();
     _loadProducts();
+    _subscribeToProductChanges();
     _checkAbandonedCart();
+  }
+
+  void _subscribeToProductChanges() {
+    try {
+      _productsChannel = supabase
+          .channel('public:products_live')
+          .onPostgresChanges(
+            event: PostgresChangeEvent.all,
+            schema: 'public',
+            table: 'products',
+            callback: (_) {
+              if (mounted) _loadProducts();
+            },
+          )
+          .subscribe();
+    } catch (_) {}
+  }
+
+  @override
+  void dispose() {
+    _productsChannel?.unsubscribe();
+    _searchCtrl.dispose();
+    super.dispose();
   }
 
   void _checkAbandonedCart() {
@@ -3383,13 +3697,6 @@ class _HomeScreenState extends State<HomeScreen> {
                         final bool isOutOfStock =
                             item['out_of_stock'] == true ||
                             item['is_out_of_stock'] == true;
-                        final int stockCount =
-                            int.tryParse(
-                              item['stock']?.toString() ??
-                                  item['quantity']?.toString() ??
-                                  '',
-                            ) ??
-                            0;
                         final colors =
                             item['colors'] != null && item['colors'] is List
                             ? item['colors']
@@ -3641,11 +3948,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                     ),
                                     const SizedBox(height: 4),
                                     Text(
-                                      isOutOfStock
-                                          ? 'نفد من المخزون'
-                                          : stockCount > 0
-                                          ? 'باقي $stockCount قطعة'
-                                          : 'متوفر',
+                                      isOutOfStock ? 'نفد من المخزون' : 'متوفر',
                                       style: TextStyle(
                                         color: isOutOfStock
                                             ? Colors.red
@@ -3832,6 +4135,7 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
   double _userRating = 5.0;
   final TextEditingController _commentCtrl = TextEditingController();
   final TextEditingController _reviewerNameCtrl = TextEditingController();
+  final TextEditingController _reviewerPhoneCtrl = TextEditingController();
   List<Map<String, dynamic>> _localReviews = [];
   Uint8List? _reviewImageBytes;
 
@@ -3847,6 +4151,7 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
     _pageController.dispose();
     _commentCtrl.dispose();
     _reviewerNameCtrl.dispose();
+    _reviewerPhoneCtrl.dispose();
     super.dispose();
   }
 
@@ -3958,6 +4263,7 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
   Future<void> _submitReview(String productName) async {
     final comment = _commentCtrl.text.trim();
     final name = _reviewerNameCtrl.text.trim();
+    final phone = _reviewerPhoneCtrl.text.trim();
     if (comment.isEmpty) return;
 
     String base64Img = '';
@@ -3969,6 +4275,7 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
       'reviewer_name': name.isEmpty ? 'زبون زائر' : name,
       'rating': _userRating,
       'comment': comment,
+      'phone': phone,
       'image_bytes': base64Img,
     };
 
@@ -3984,11 +4291,13 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
         'reviewer_name': newReview['reviewer_name'],
         'rating': _userRating,
         'comment': comment,
+        'phone': phone,
       });
     } catch (_) {}
 
     _commentCtrl.clear();
     _reviewerNameCtrl.clear();
+    _reviewerPhoneCtrl.clear();
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -4791,6 +5100,15 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
                   controller: _reviewerNameCtrl,
                   decoration: const InputDecoration(
                     labelText: 'اسمك الكريم (اختياري)',
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+                const SizedBox(height: 10),
+                TextField(
+                  controller: _reviewerPhoneCtrl,
+                  keyboardType: TextInputType.phone,
+                  decoration: const InputDecoration(
+                    labelText: 'رقم الهاتف للتواصل (اختياري)',
                     border: OutlineInputBorder(),
                   ),
                 ),
@@ -6378,6 +6696,45 @@ class _AdminOrdersScreenState extends State<AdminOrdersScreen> {
                         'الزبون: ${o['customer_name']} | الهاتف: $customerPhone',
                       ),
                       Text('العنوان: ${o['address']}'),
+                      const SizedBox(height: 10),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.end,
+                        children: [
+                          OutlinedButton.icon(
+                            icon: const Icon(Icons.chat_bubble_outline),
+                            label: const Text('داخل التطبيق'),
+                            onPressed: customerPhone.trim().isEmpty
+                                ? null
+                                : () => Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (_) => StoreChatScreen(
+                                          customerContact: customerPhone,
+                                          customerName:
+                                              o['customer_name']?.toString() ??
+                                              'زبون',
+                                          isAdmin: true,
+                                        ),
+                                      ),
+                                    ),
+                          ),
+                          const SizedBox(width: 8),
+                          ElevatedButton.icon(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFF25D366),
+                              foregroundColor: Colors.white,
+                            ),
+                            icon: const Icon(Icons.chat),
+                            label: const Text('واتساب'),
+                            onPressed: customerPhone.trim().isEmpty
+                                ? null
+                                : () => _openCustomerWhatsApp(
+                                      customerPhone,
+                                      'مرحباً ${o['customer_name'] ?? ''}، بخصوص طلبك في متجر الأمين: $productName',
+                                    ),
+                          ),
+                        ],
+                      ),
                       const Divider(height: 16),
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -6763,41 +7120,14 @@ class _AdminSupportMessagesScreenState
     String customerName,
     String customerPhone,
   ) {
-    final replyCtrl = TextEditingController();
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: Text('الرد على الزبون: $customerName'),
-        content: TextField(
-          controller: replyCtrl,
-          maxLines: 4,
-          decoration: const InputDecoration(
-            labelText: 'اكتب رد الإدارة هنا...',
-            border: OutlineInputBorder(),
-          ),
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => StoreChatScreen(
+          customerContact: customerPhone,
+          customerName: customerName,
+          isAdmin: true,
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('إلغاء'),
-          ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF1E3A8A),
-              foregroundColor: Colors.white,
-            ),
-            onPressed: () {
-              Navigator.pop(ctx);
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('✅ تم إرسال الرد للزبون بنجاح!'),
-                  backgroundColor: Color(0xFF10B981),
-                ),
-              );
-            },
-            child: const Text('إرسال الرد'),
-          ),
-        ],
       ),
     );
   }
@@ -6998,16 +7328,31 @@ class AdminReviewsScreen extends StatelessWidget {
                     style: const TextStyle(fontWeight: FontWeight.bold),
                   ),
                   subtitle: Text(
-                    'الكاتب: ${r['reviewer_name']}\nالتقييم: $rRating ⭐\nالتعليق: ${r['comment']}',
+                    'الكاتب: ${r['reviewer_name']}\nالهاتف: ${r['phone'] ?? 'غير مضاف'}\nالتقييم: $rRating ⭐\nالتعليق: ${r['comment']}',
                   ),
                   isThreeLine: true,
-                  trailing: IconButton(
-                    icon: const Icon(Icons.delete, color: Colors.red),
-                    onPressed: () => _deleteReview(
-                      context,
-                      r['id'],
-                      () => (context as Element).markNeedsBuild(),
-                    ),
+                  trailing: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      IconButton(
+                        icon: const Icon(Icons.chat, color: Color(0xFF25D366)),
+                        tooltip: 'التواصل عبر واتساب',
+                        onPressed: (r['phone']?.toString() ?? '').trim().isEmpty
+                            ? null
+                            : () => _openCustomerWhatsApp(
+                                  r['phone'].toString(),
+                                  'مرحباً ${r['reviewer_name'] ?? ''}، بخصوص تعليقك على منتج ${r['product_name'] ?? ''} في متجر الأمين:',
+                                ),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.delete, color: Colors.red),
+                        onPressed: () => _deleteReview(
+                          context,
+                          r['id'],
+                          () => (context as Element).markNeedsBuild(),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               );
